@@ -1,8 +1,12 @@
-import { Controller,Param, Get,Put, Post,Delete, Body, UsePipes, ValidationPipe, Req } from '@nestjs/common';
+import { Controller,Param,Res, UseInterceptors, UploadedFiles ,UploadedFile, Get,Put, Post,Delete, Body, UsePipes, ValidationPipe, Req } from '@nestjs/common';
 import { etudiantsService  } from './etudiant.service';
 import { CreateEtudiantDTO } from './dto/CreateEtudiantDTO';
 import { etudiant } from './etudiant.entity';
+import  { imageFileFilter } from './imageFileFilter';
+import {editFileName} from './editFileName';
+import {FilesInterceptor} from '@nestjs/platform-express';
 
+import { diskStorage } from 'multer';
 @Controller('etudiants')
 export class EtudiantsController {
     constructor(private etudiantsService:etudiantsService){ }
@@ -33,5 +37,34 @@ export class EtudiantsController {
     async delete(@Param('id') id): Promise<any> {
       return this.etudiantsService.delete(id);
     }  
+
+
+
+
+    @Post('multiple')
+@UseInterceptors(
+  FilesInterceptor('image', 20, {
+    storage: diskStorage({
+      destination: './uploads',
+      filename: editFileName,
+    }),
+    fileFilter: imageFileFilter,
+  }),
+)
+async uploadMultipleFiles(@UploadedFiles() files) {
+  const response = [];
+  files.forEach(file => {
+    const fileReponse = {
+      originalname: file.originalname,
+      filename: file.filename,
+    };
+    response.push(fileReponse);
+  });
+  return response;
+}
+@Get('/img/:imgpath')
+seeUploadedFile(@Param('imgpath') image, @Res() res) {
+  return res.sendFile(image, { root: './uploads' });
+}
 }
 
